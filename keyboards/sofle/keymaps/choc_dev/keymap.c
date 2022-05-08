@@ -32,7 +32,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
  * |------+------+------+------+------+------|       |    |       |------+------+------+------+------+------|
  * |LShift|   Z  |   X  |   C  |   V  |   B  |-------|    |-------|   N  |   M  |   ,< |   .> |   /? |  \|  |
  * `-----------------------------------------/       /     \      \-----------------------------------------'
- *            | LGUI | LAlt | LOWER | LCTR | /Enter  /       \Space \  |Bckspc| LOWER| [{}  | ]}   |
+ *            | LGUI | LAlt | LOWER | LCTR | /Bckspc /       \Space \  |Enter| LOWER| [{}  | ]}   |
  *            |      |      |       |      |/       /         \      \ |      |      |      |      |
  *            `----------------------------------'           '------''---------------------------'
  */
@@ -42,7 +42,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_ESC,   KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,                     KC_Y,     KC_U,     KC_I,    KC_O,   KC_P,    KC_MINS, \
   KC_TAB,   KC_A,   KC_S,    KC_D,    KC_F,    KC_G,                     KC_H,     KC_J,     KC_K,    KC_L,   KC_SCLN, KC_QUOT, \
   KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_MUTE,   XXXXXXX, KC_N,     KC_M,     KC_COMM, KC_DOT, KC_SLSH, KC_BSLS, \
-                 KC_LGUI,KC_LALT, KC_LOWER, KC_LCTRL, KC_ENT,    KC_SPC,  KC_BSPC, KC_LOWER, KC_LBRC, KC_RBRC \
+                 KC_LGUI,KC_LALT, KC_LOWER, KC_LCTRL, KC_BSPC,    KC_SPC,  KC_ENT, KC_LOWER, KC_LBRC, KC_RBRC \
 ),
 /* LOWER
  * ,-----------------------------------------.                    ,-----------------------------------------.
@@ -131,13 +131,13 @@ static void render_logo(void) {
 
 static void print_status_narrow(void) {
     // Print current mode
-    oled_write_P(PSTR("\n\n"), false);
-    oled_write_ln_P(PSTR("Hello"), false);
-    oled_write_ln_P(PSTR(""), false);
+    // oled_write_P(PSTR("\n\n"), false);
+    // oled_write_ln_P(PSTR("Hello"), false);
+    // oled_write_ln_P(PSTR(""), false);
     if (keymap_config.swap_lctl_lgui) {
         oled_write_ln_P(PSTR("Mac"), false);
     } else {
-        oled_write_ln_P(PSTR("Linux"), false);
+        oled_write_ln_P(PSTR("Lin"), false);
     }
     oled_write_P(PSTR("\n\n"), false);
     switch (get_highest_layer(default_layer_state)) {
@@ -168,7 +168,19 @@ static void print_status_narrow(void) {
     }
     oled_write_P(PSTR("\n\n"), false);
     led_t led_usb_state = host_keyboard_led_state();
-    oled_write_ln_P(PSTR("CPSLK"), led_usb_state.caps_lock);
+    oled_write_ln_P(PSTR("Caps"), led_usb_state.caps_lock);
+
+    /* wpm counter */
+    oled_set_cursor(0, 14);
+    oled_write("wpm", false);
+    uint8_t n = get_current_wpm();
+    char    wpm_str[4];
+    oled_set_cursor(0, 15);
+    wpm_str[3] = '\0';
+    wpm_str[2] = '0' + n % 10;
+    wpm_str[1] = '0' + (n /= 10) % 10;
+    wpm_str[0] = '0' + n / 10;
+    oled_write(wpm_str, false);
 }
 
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
