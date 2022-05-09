@@ -4,7 +4,6 @@ enum sofle_layers {
     /* _M_XYZ = Mac Os, _W_XYZ = Win/Linux */
     _QWERTY,
     _LOWER,
-    _RAISE,
     _ADJUST,
 };
 
@@ -41,7 +40,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   KC_GRV,   KC_1,   KC_2,    KC_3,    KC_4,    KC_5,                     KC_6,     KC_7,     KC_8,    KC_9,   KC_0,    KC_EQL, \
   KC_ESC,   KC_Q,   KC_W,    KC_E,    KC_R,    KC_T,                     KC_Y,     KC_U,     KC_I,    KC_O,   KC_P,    KC_MINS, \
   KC_TAB,   KC_A,   KC_S,    KC_D,    KC_F,    KC_G,                     KC_H,     KC_J,     KC_K,    KC_L,   KC_SCLN, KC_QUOT, \
-  KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_MUTE,   XXXXXXX, KC_N,     KC_M,     KC_COMM, KC_DOT, KC_SLSH, KC_BSLS, \
+  KC_LSFT,  KC_Z,   KC_X,    KC_C,    KC_V,    KC_B, KC_MUTE,   KC_MNXT, KC_N,     KC_M,     KC_COMM, KC_DOT, KC_SLSH, KC_BSLS, \
                  KC_LGUI,KC_LALT, KC_LCTRL, KC_LOWER, KC_ENT,    KC_SPC,  KC_LOWER, KC_BSPC, KC_LBRC, KC_RBRC \
 ),
 /* LOWER
@@ -134,6 +133,14 @@ led_config_t g_led_config = { {
   1, 1, 1, 1, 1,
   1, 1, 1, 1
 } };
+
+void suspend_power_down_keymap(void) {
+    rgb_matrix_set_suspend_state(true);
+}
+
+void suspend_wakeup_init_keymap(void) {
+    rgb_matrix_set_suspend_state(false);
+}
 
 #endif
 
@@ -232,9 +239,6 @@ static void print_status_narrow(void) {
         case _QWERTY:
             oled_write_P(PSTR("Base\n"), false);
             break;
-        case _RAISE:
-            oled_write_P(PSTR("Raise"), false);
-            break;
         case _LOWER:
             oled_write_P(PSTR("Lower"), false);
             break;
@@ -275,7 +279,19 @@ void oled_task_user(void) {
 
 #endif
 
+#define IDLE_TIMER_DURATION 20000
+static uint32_t idle_timer; //custom timer to check if keyboard is idled.
+bool rgbkeyIdle = false; //flag for keyboard idling, nil keys for set
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    idle_timer = timer_read();
+
+    if (rgbkeyIdle) {       //check if the keyboards already idle and if it is, turn it back on as key is pressed.
+        rgbkeyIdle = false;
+        rgb_matrix_set_suspend_state(false);
+        rgb_matrix_enable_noeeprom();
+    }
+
     switch (keycode) {
         case KC_QWERTY:
             if (record->event.pressed) {
@@ -285,10 +301,10 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_LOWER:
             if (record->event.pressed) {
                 layer_on(_LOWER);
-                update_tri_layer(_LOWER, _RAISE, _ADJUST);
+                // update_tri_layer(_LOWER, _RAISE, _ADJUST);
             } else {
                 layer_off(_LOWER);
-                update_tri_layer(_LOWER, _RAISE, _ADJUST);
+                // update_tri_layer(_LOWER, _RAISE, _ADJUST);
             }
             return false;
         case KC_ADJUST:
@@ -381,43 +397,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_BSPC);
             }
             break;
-        case KC_COPY:
-            if (record->event.pressed) {
-                register_mods(mod_config(MOD_LCTL));
-                register_code(KC_C);
-            } else {
-                unregister_mods(mod_config(MOD_LCTL));
-                unregister_code(KC_C);
-            }
-            return false;
-        case KC_PASTE:
-            if (record->event.pressed) {
-                register_mods(mod_config(MOD_LCTL));
-                register_code(KC_V);
-            } else {
-                unregister_mods(mod_config(MOD_LCTL));
-                unregister_code(KC_V);
-            }
-            return false;
-        case KC_CUT:
-            if (record->event.pressed) {
-                register_mods(mod_config(MOD_LCTL));
-                register_code(KC_X);
-            } else {
-                unregister_mods(mod_config(MOD_LCTL));
-                unregister_code(KC_X);
-            }
-            return false;
-            break;
-        case KC_UNDO:
-            if (record->event.pressed) {
-                register_mods(mod_config(MOD_LCTL));
-                register_code(KC_Z);
-            } else {
-                unregister_mods(mod_config(MOD_LCTL));
-                unregister_code(KC_Z);
-            }
-            return false;
     }
     return true;
 }
@@ -427,18 +406,30 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 bool encoder_update_kb(uint8_t index, bool clockwise) {
     if (index == 0) {
         if (clockwise) {
-            tap_code(KC_VOLD);
+            tap_code(KC_RGHT);
         } else {
-            tap_code(KC_VOLU);
+            tap_code(KC_LEFT);
         }
     } else if (index == 1) {
         if (clockwise) {
-            tap_code(KC_PGDOWN);
+            tap_code(KC_DOWN);
         } else {
-            tap_code(KC_PGUP);
+            tap_code(KC_UP);
         }
     }
     return true;
 }
 
 #endif
+
+
+void matrix_scan_user(void) {
+    //custom idle rbg switch off function
+    if (timer_elapsed(idle_timer) > IDLE_TIMER_DURATION) {
+        idle_timer = 0;
+        timer_clear();
+        rgbkeyIdle = true;
+        rgb_matrix_set_suspend_state(true);
+        rgb_matrix_disable_noeeprom();
+    }
+}

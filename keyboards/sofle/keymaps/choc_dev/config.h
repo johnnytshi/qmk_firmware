@@ -30,6 +30,8 @@
 #define RGB_MATRIX_VAL_STEP 8
 #define RGB_MATRIX_SPD_STEP 10
 
+#define RGB_DISABLE_WHEN_USB_SUSPENDED false
+
 // RGB animations. Disable the animations you don't want/need.
 #define DISABLE_RGB_MATRIX_ALPHAS_MODS
 #define DISABLE_RGB_MATRIX_GRADIENT_UP_DOWN
