@@ -15,8 +15,11 @@
 // RGB Configuration
 // The pin connected to the data pin of the LEDs
 #define RGB_DI_PIN D3
-#define RGBLED_SPLIT { 29, 29 }
-#define DRIVER_LED_TOTAL 29
+#undef RGBLED_NUM
+#define RGBLED_NUM       58 // Number of LEDs
+#define DRIVER_LED_TOTAL RGBLED_NUM
+#define RGB_MATRIX_SPLIT \
+        { 29, 29  }
 
 #define RGB_MATRIX_KEYPRESSES
 #define RGB_MATRIX_STARTUP_MODE RGB_MATRIX_BREATHING
